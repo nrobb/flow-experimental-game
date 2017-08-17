@@ -20,7 +20,7 @@ DDATest.MeteorShower.prototype.create = function() {
     1300, 1350, 1400, 1450, 1500, 1550, 1600, 1650, 1700
   ];
   this.PLAYER_VELOCITY = 10;
-  this.OPTIMUM_SUCESS_RATE = 0.95;
+  this.OPTIMUM_SUCESS_RATE = 0.99;
   this.CONTROL_VELOCITY = 700;
   // random seed (ensures all players get same sequence of meteor/star locations)
   Srand.seed(10);
@@ -36,10 +36,20 @@ DDATest.MeteorShower.prototype.create = function() {
   this.add.image(232, -20, 'background');
   //this.starfield = this.add.tileSprite(256, 0, 512, 768, 'starfield');
   // instructions
-  this.add.text(10, 10, '*use the left and right', { font: "22px Arial", fill: "#ffffff", align: "center" });
-  this.add.text(10, 35, 'arrows to move', { font: "22px Arial", fill: "#ffffff", align: "center" });
-  this.add.text(10, 70, '*catch the falling stars', { font: "22px Arial", fill: "#ffffff", align: "center" });
-  this.add.text(10, 105, '*avoid the meteors', { font: "22px Arial", fill: "#ffffff", align: "center" });
+  this.add.bitmapText(10, 10, 'carrier-command', 'left and right', 10);
+  this.add.bitmapText(10, 35, 'carrier-command', 'arrows to move', 10);
+  // scoring
+  this.score = 0;
+  this.highScore = 0;
+  this.add.bitmapText(800, 10, 'carrier-command', 'CURRENT SCORE', 12);
+  this.add.bitmapText(800, 80, 'carrier-command', 'HIGH SCORE', 12);
+  this.displayScore = this.add.bitmapText(800, 30, 'carrier-command', this.score, 16);
+  this.displayHighScore = this.add.bitmapText(800, 100, 'carrier-command', this.highScore, 16);
+  // betwenn wave text
+  this.getReady = this.add.bitmapText(this.world.centerX, this.world.centerY - 15, 'carrier-command',"GET READY!!!", 16);
+  this.getReady.anchor.setTo(0.5, 0.5);
+  this.waveCountdown = this.add.bitmapText(this.world.centerX, this.world.centerY + 20, 'carrier-command', 3, 20);
+  this.waveCountdown.anchor.setTo(0.5, 0.5);
   // hide the cursor
   document.getElementById("gameContainer").style.cursor = "none";
   // physics
@@ -77,11 +87,14 @@ DDATest.MeteorShower.prototype.create = function() {
   // sound
   this.explosionAudio = this.add.audio('explosion');
   this.collectAudio = this.add.audio('collect-coin');
+  this.countdownAudio = this.add.audio('blip');
+  this.hurtAudio = this.add.audio('hurt');
   this.music = this.add.audio('music');
   this.music.play(null, null, 0.7, true);
   // cursor keys
   this.cursors = this.input.keyboard.createCursorKeys();
   // counters
+  this.numberOfStars = 0;
   this.numberOfBalls = 0;
   this.playerWasHit = 0;
   this.level = 0;
@@ -112,25 +125,38 @@ DDATest.MeteorShower.prototype.update = function() {
   }
   // reset the meteor if it's at the bottom
   if (this.meteor.y > this.player.y) {
-    this.explosionAudio.play();
-    this.juice.shake();
     this.resetBall();
   }
   // particle effects
   this.meteorEmitter.emitParticle(this.meteor.x, this.meteor.y);
   this.starEmitter.emitParticle(this.star.x, this.star.y);
+  // update the score display
+  this.displayScore.setText(this.score);
+  this.displayHighScore.setText(this.highScore);
 };
 
 DDATest.MeteorShower.prototype.collideStar = function() {
+  this.score++;
   this.collectAudio.play();
   this.star.reset(-100, -50);
 };
 
 DDATest.MeteorShower.prototype.createStar = function() {
+  this.numberOfStars++;
   this.star.reset(Srand.randomIntegerIn(256, this.world.width - 256), -50);
+  console.log("number of stars this level: " + this.numberOfStars)
 };
 
 DDATest.MeteorShower.prototype.resetBall = function() {
+  // juice
+  this.explosionAudio.play();
+  this.juice.shake();
+  // score
+  if (Phaser.Rectangle.intersects(this.player.getBounds(), this.meteor.getBounds())) {
+    this.score = Math.max(this.score -1, 0);
+    // audio
+    this.hurtAudio.play();
+  }
   // adjust the counters
   this.numberOfBalls++;
   if (Phaser.Rectangle.intersects(this.player.getBounds(), this.meteor.getBounds())) {
@@ -144,14 +170,17 @@ DDATest.MeteorShower.prototype.resetBall = function() {
 };
 
 DDATest.MeteorShower.prototype.setVelocity = function() {
-  var successRate = (this.numberOfBalls - this.playerWasHit) / this.numberOfBalls;
-  if (successRate < this.OPTIMUM_SUCESS_RATE) {
+  var avoidance = (this.numberOfBalls - this.playerWasHit) / this.numberOfBalls;
+  var collection = (this.score / this.numberOfStars);
+  if ((avoidance < this.OPTIMUM_SUCESS_RATE) && (collection < this.OPTIMUM_SUCESS_RATE)) {
+    console.log("too hard")
     this.velocity = this.dda.update('velocity', POSM.TOO_HARD);
-  } else if (successRate > this.OPTIMUM_SUCESS_RATE) {
+  } else if (avoidance > this.OPTIMUM_SUCESS_RATE) {
     this.velocity = this.dda.update('velocity', POSM.TOO_EASY);
   }
   this.resetCount();
-  console.log("success rate = " + successRate)
+  console.log("avoidance rate = " + avoidance)
+  console.log("collection rate = " + collection)
   console.log("velocity = " + this.velocity)
 };
 
@@ -161,7 +190,7 @@ DDATest.MeteorShower.prototype.resetCount = function() {
 };
 
 DDATest.MeteorShower.prototype.setupExperiemt = function() {
-  this.startCountdown();
+  this.levelInterval();
   switch (this.experimentalCondition) {
     case "control":
       this.velocity = this.CONTROL_VELOCITY;
@@ -176,9 +205,20 @@ DDATest.MeteorShower.prototype.setupExperiemt = function() {
   }
 };
 
+DDATest.MeteorShower.prototype.setScores = function() {
+  if (this.score > this.highScore) {
+    this.highScore = this.score;
+    this.newHighScore();
+  }
+  this.score = 0;
+};
+
+DDATest.MeteorShower.prototype.newHighScore = function() {
+
+};
+
 DDATest.MeteorShower.prototype.runExperiemt = function() {
-  this.startCountdown();
-  this.level++;
+  this.levelInterval();
   if (this.level === this.MAX_LEVELS) {
     this.endGame();
   }
@@ -216,16 +256,49 @@ DDATest.MeteorShower.prototype.incrementDifficulty = function() {
   this.velocity = this.velocities[index];
 };
 
-DDATest.MeteorShower.prototype.startCountdown = function() {
-  console.log("countdown")
+DDATest.MeteorShower.prototype.showInterLevelInfo = function() {
+
+};
+
+DDATest.MeteorShower.prototype.displayMessages = function() {
+  if (this.level === 0) {
+    return;
+  }
+  this.getReady.reset(this.world.centerX, this.world.centerY - 15);
+  this.waveCountdown.reset(this.world.centerX, this.world.centerY + 15);
+  this.countdownAudio.play();
+  this.time.events.add(this.COUNTDOWN_DURATION * 0.25, function countdown() {
+    this.countdownAudio.play();
+    this.waveCountdown.setText("2");
+  }, this);
+  this.time.events.add(this.COUNTDOWN_DURATION * 0.5, function countdown() {
+    this.waveCountdown.setText("1");
+    this.countdownAudio.play();
+  }, this);
+  this.time.events.add(this.COUNTDOWN_DURATION * 0.75, function countdown() {
+    this.waveCountdown.setText("START!!!");
+    this.countdownAudio.play();
+  }, this);
+  this.time.events.add(this.COUNTDOWN_DURATION, function countdown() {
+    this.getReady.kill()
+    this.waveCountdown.kill()
+    this.waveCountdown.setText("3");
+  }, this);
+};
+
+DDATest.MeteorShower.prototype.levelInterval = function() {
+  this.setScores();
+  this.level++;
   this.star.kill();
   this.meteor.reset(0, -50);
   this.time.events.removeAll();
   this.time.events.add(this.COUNTDOWN_DURATION, this.startNewLevel, this);
+  this.displayMessages();
 };
 
 DDATest.MeteorShower.prototype.startNewLevel = function() {
   // add stars
+  this.numberOfStars = 0;
   this.time.events.repeat(this.STAR_INTERVAL,
     this.STARS_PER_LEVEL, this.createStar, this);
   // reset the meteors
