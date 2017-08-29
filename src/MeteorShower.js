@@ -20,7 +20,7 @@ DDATest.MeteorShower.prototype.create = function() {
     1300, 1350, 1400, 1450, 1500, 1550, 1600, 1650, 1700
   ];
   this.PLAYER_VELOCITY = 10;
-  this.OPTIMUM_SUCESS_RATE = 0.99;
+  this.OPTIMUM_SUCESS_RATE = 1;
   this.CONTROL_VELOCITY = 700;
   // random seed (ensures all players get same sequence of meteor/star locations)
   Srand.seed(10);
@@ -172,10 +172,11 @@ DDATest.MeteorShower.prototype.resetBall = function() {
 DDATest.MeteorShower.prototype.setVelocity = function() {
   var avoidance = (this.numberOfBalls - this.playerWasHit) / this.numberOfBalls;
   var collection = (this.score / this.numberOfStars);
-  if ((avoidance < this.OPTIMUM_SUCESS_RATE) && (collection < this.OPTIMUM_SUCESS_RATE)) {
+  if ((avoidance < this.OPTIMUM_SUCESS_RATE) || (collection < this.OPTIMUM_SUCESS_RATE)) {
     console.log("too hard")
     this.velocity = this.dda.update('velocity', POSM.TOO_HARD);
-  } else if (avoidance > this.OPTIMUM_SUCESS_RATE) {
+  } else {
+    console.log("too easy")
     this.velocity = this.dda.update('velocity', POSM.TOO_EASY);
   }
   this.resetCount();
