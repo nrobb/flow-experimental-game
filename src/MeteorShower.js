@@ -56,8 +56,8 @@ DDATest.MeteorShower.prototype.create = function() {
   this.physics.startSystem(Phaser.Physics.ARCADE);
   this.velocities = this.VELOCIIES;
   this.velocity = this.velocities[this.velocities.length / 2];
-  // wabbit
-  this.player = this.add.sprite(this.world.centerX, 700, 'wabbit');
+  // player-sprite
+  this.player = this.add.sprite(this.world.centerX, 700, 'player-sprite');
   this.player.anchor.setTo(0.5, 0.5);
   this.physics.enable(this.player, Phaser.Physics.ARCADE);
   // meteor
@@ -118,9 +118,12 @@ DDATest.MeteorShower.prototype.update = function() {
   }
   // controls
   if (this.cursors.left.isDown && this.player.x > 256) {
+    this.player.scale.x = 1;
     this.player.x -= this.PLAYER_VELOCITY;
+
   }
   if (this.cursors.right.isDown && this.player.x < 768) {
+    this.player.scale.x = -1;
     this.player.x += this.PLAYER_VELOCITY;
   }
   // reset the meteor if it's at the bottom

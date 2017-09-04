@@ -6,7 +6,7 @@ DDATest.Preloader = function(game) {
 
 DDATest.Preloader.prototype.preload = function() {
   // Sprites
-  this.load.image('wabbit', 'assets/wabbit.png');
+  this.load.image('player-sprite', 'assets/player-sprite.png');
   this.load.image('particle', 'assets/small-circle.png');
   this.load.image('star', 'assets/star.png');
   this.load.image('background', 'assets/background.png'); //560*768
