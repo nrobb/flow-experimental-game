@@ -10,6 +10,7 @@ DDATest.Preloader.prototype.preload = function() {
   this.load.image('particle', 'assets/small-circle.png');
   this.load.image('star', 'assets/star.png');
   this.load.image('background', 'assets/background.png'); //560*768
+  this.load.image('launch-survey', 'assets/survey-button-540-160.png');
   this.load.spritesheet('rock', 'assets/rock.png', 64, 64);
   // Bitmap font
   this.load.bitmapFont('carrier-command', 'assets/fonts/carrier-command.png',
@@ -39,6 +40,11 @@ DDATest.Preloader.prototype.preload = function() {
     'assets/blip.mp3',
     'assets/blip.ogg',
     'assets/blip.m4a'
+  ]);
+  this.load.audio('success', [
+    'assets/success.mp3',
+    'assets/success.ogg',
+    'assets/success.m4a'
   ]);
   // Background
   this.load.image('starfield', 'assets/starfield.png');

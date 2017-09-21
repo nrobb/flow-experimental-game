@@ -89,6 +89,7 @@ DDATest.MeteorShower.prototype.create = function() {
   this.collectAudio = this.add.audio('collect-coin');
   this.countdownAudio = this.add.audio('blip');
   this.hurtAudio = this.add.audio('hurt');
+  this.successAudio = this.add.audio('success');
   this.music = this.add.audio('music');
   this.music.play(null, null, 0.7, true);
   // cursor keys
@@ -104,10 +105,20 @@ DDATest.MeteorShower.prototype.create = function() {
   // dda
   this.dda = new POSM.Posm();
   // start
+  this.gameOver = false;
   this.setupExperiemt();
 };
 
 DDATest.MeteorShower.prototype.update = function() {
+  // Game still running?
+  if (this.gameOver) {
+    return;
+  }
+
+  // FOR TESTING SURVEY LAUNCH ONLY
+  //this.endGame();
+  // FOR TESTING SURVEY LAUNCH ONLY
+
   // move the star
   if (this.star.alive) {
     this.star.y += this.STAR_VELOCITY;
@@ -319,6 +330,21 @@ DDATest.MeteorShower.prototype.getExperimentalCondition = function() {
 };
 
 DDATest.MeteorShower.prototype.endGame = function() {
-  this.music.stop();
+  this.gameOver = true;
+  // stop all game events
+  this.time.events.removeAll();
+  // play a sound
+  this.successAudio.play();
+  // show the cursor
+  document.getElementById("gameContainer").style.cursor = "default";
+  // show the button
+  this.launch = this.add.image(this.world.centerX, this.world.centerY, 'launch-survey');
+  this.launch.anchor.set(0.5, 0.5);
+  this.launch.inputEnabled = true;
+  this.launch.events.onInputUp.add(function() {
+    this.music.stop();
+    var url = "https://google.com/search?q=" + this.experimentalCondition;
+    window.location.href = url;
+  }, this);
   console.log("game over")
 };
