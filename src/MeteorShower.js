@@ -100,7 +100,7 @@ DDATest.MeteorShower.prototype.create = function() {
   this.playerWasHit = 0;
   this.level = 0;
   // experiemental condition
-  this.experimentalCondition = this.getExperimentalCondition();
+  this.setExperimentalCondition();
   // dda
   this.dda = new POSM.Posm();
   // start
@@ -270,10 +270,6 @@ DDATest.MeteorShower.prototype.incrementDifficulty = function() {
   this.velocity = this.velocities[index];
 };
 
-DDATest.MeteorShower.prototype.showInterLevelInfo = function() {
-
-};
-
 DDATest.MeteorShower.prototype.displayMessages = function() {
   if (this.level === 0) {
     return;
@@ -321,9 +317,19 @@ DDATest.MeteorShower.prototype.startNewLevel = function() {
   this.time.events.add(this.LEVEL_DURATION, this.runExperiemt, this);
 };
 
-DDATest.MeteorShower.prototype.getExperimentalCondition = function() {
-  //TODO get condition from server
-  return "dda";
+DDATest.MeteorShower.prototype.setExperimentalCondition = function() {
+  var rnd = this.rnd.integerInRange(0, 2);
+  switch(rnd) {
+    case 0:
+      this.experimentalCondition = "dda";
+      break;
+    case 1:
+      this.experimentalCondition = "inc";
+      break;
+    case 2:
+      this.experimentalCondition = "con";
+      break;
+  }
 };
 
 DDATest.MeteorShower.prototype.endGame = function() {
