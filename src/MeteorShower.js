@@ -101,10 +101,10 @@ DDATest.MeteorShower.prototype.create = function() {
   this.level = 0;
   // experiemental condition
   this.experimentalCondition = this.getExperimentalCondition();
-  console.log(this.experimentalCondition)
   // dda
   this.dda = new POSM.Posm();
   // start
+  localStorage.setItem("data", "");
   this.gameOver = false;
   this.setupExperiemt();
 };
@@ -158,7 +158,6 @@ DDATest.MeteorShower.prototype.collideStar = function() {
 DDATest.MeteorShower.prototype.createStar = function() {
   this.numberOfStars++;
   this.star.reset(Srand.randomIntegerIn(256, this.world.width - 256), -50);
-  console.log("number of stars this level: " + this.numberOfStars)
 };
 
 DDATest.MeteorShower.prototype.resetBall = function() {
@@ -187,16 +186,12 @@ DDATest.MeteorShower.prototype.setVelocity = function() {
   var avoidance = (this.numberOfBalls - this.playerWasHit) / this.numberOfBalls;
   var collection = (this.score / this.numberOfStars);
   if ((avoidance < this.OPTIMUM_SUCESS_RATE) || (collection < this.OPTIMUM_SUCESS_RATE)) {
-    console.log("too hard")
     this.velocity = this.dda.update('velocity', POSM.TOO_HARD);
   } else {
-    console.log("too easy")
     this.velocity = this.dda.update('velocity', POSM.TOO_EASY);
   }
+  this.saveData(avoidance, collection, this.playerWasHit, this.score, this.velocity);
   this.resetCount();
-  console.log("avoidance rate = " + avoidance)
-  console.log("collection rate = " + collection)
-  console.log("velocity = " + this.velocity)
 };
 
 DDATest.MeteorShower.prototype.resetCount = function() {
@@ -204,17 +199,23 @@ DDATest.MeteorShower.prototype.resetCount = function() {
   this.numberOfBalls = 0;
 };
 
+DDATest.MeteorShower.prototype.saveData = function(avoidance, collection, playerWasHit, score, velocity) {
+  var data = localStorage.getItem("data");
+  data += avoidance + "," + collection + "," + playerWasHit + "," + score + "," + velocity + ",";
+  localStorage.setItem("data", data);
+};
+
 DDATest.MeteorShower.prototype.setupExperiemt = function() {
   this.levelInterval();
   switch (this.experimentalCondition) {
-    case "control":
+    case "con":
       this.velocity = this.CONTROL_VELOCITY;
     break;
-    case "DDA":
+    case "dda":
       this.velocity = this.dda.init('velocity', this.velocities);
       this.setDDAupdate();
     break;
-    case "incremental":
+    case "inc":
       this.velocity = this.velocities[0];
     break;
   }
@@ -238,23 +239,21 @@ DDATest.MeteorShower.prototype.runExperiemt = function() {
     this.endGame();
   }
   switch (this.experimentalCondition) {
-    case "control":
+    case "con":
     break;
-    case "DDA":
+    case "dda":
       this.setDDAupdate();
     break;
-    case "incremental":
+    case "inc":
       this.incrementDifficulty()
     break;
   }
 };
 
 DDATest.MeteorShower.prototype.setDDAupdate = function() {
-  if (this.experimentalCondition != "DDA") {
-    console.log("not dda game")
+  if (this.experimentalCondition != "dda") {
     return;
   }
-  console.log('reset dda')
   // update velocity
   this.time.events.repeat(this.DDA_UPDATE_INTERVAL,
     this.DDA_UPDATES_PER_LEVEL, this.setVelocity, this);
@@ -318,15 +317,13 @@ DDATest.MeteorShower.prototype.startNewLevel = function() {
     this.STARS_PER_LEVEL, this.createStar, this);
   // reset the meteors
   this.resetBall();
-  console.log("new level! velocity = ", + this.velocity)
   // set the timer to end the level and run the next stage of the experiement
   this.time.events.add(this.LEVEL_DURATION, this.runExperiemt, this);
 };
 
 DDATest.MeteorShower.prototype.getExperimentalCondition = function() {
-  //return "control";
-  return "DDA";
-  //return "incremental";
+  //TODO get condition from server
+  return "dda";
 };
 
 DDATest.MeteorShower.prototype.endGame = function() {
@@ -346,5 +343,4 @@ DDATest.MeteorShower.prototype.endGame = function() {
     var url = "https://google.com/search?q=" + this.experimentalCondition;
     window.location.href = url;
   }, this);
-  console.log("game over")
 };
